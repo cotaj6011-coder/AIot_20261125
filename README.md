@@ -22,6 +22,32 @@
 5. 在 Overleaf 將 `main_a2z.tex` 設為主文件並編譯，確認 PDF 預覽為新稿而非原稿。
 6. 審查論述、數據來源、公式邊界條件、A2Z 對照及編譯 log；本 README 記錄目前尚未完成的投稿前事項。
 
+## Overleaf MCP 安裝與啟用（VS Code）
+
+本專案已在 [.vscode/mcp.json](.vscode/mcp.json) 設定 `overleaf` MCP server。它使用 `npx -y @netique/overleaf-mcp` 啟動，因此不必先全域安裝 npm 套件。
+
+### 前置需求
+
+- 安裝 [Node.js 20 以上版本](https://nodejs.org/)；`npm` 與 `npx` 會一併提供。
+- 使用支援 MCP 的 VS Code，並安裝 Chrome、Edge、Brave 等 Chromium 系瀏覽器之一。
+- 可登入 [Overleaf](https://www.overleaf.com/) 的帳號。
+
+在 VS Code 終端確認 Node.js 與 npx 可用：
+
+```powershell
+node --version
+npx --version
+```
+
+### 啟動與登入
+
+1. 在 VS Code 開啟本專案資料夾，確認 `.vscode/mcp.json` 存在且 `overleaf` server 設定未被移除。
+2. 需要先登入時，在終端執行 `npx -y @netique/overleaf-mcp login`。命令會開啟專用瀏覽器視窗；在該視窗登入 Overleaf，完成後 session 會供 MCP server 使用。
+3. 在 VS Code 命令面板執行 `MCP: List Servers`，選擇 `overleaf` 並啟動。第一次啟動時，若 VS Code 要求信任此 workspace 或確認啟動 server，請檢查設定來源為本專案的 `.vscode/mcp.json` 後再確認。
+4. 從 VS Code 的 MCP 工具清單呼叫 `ping`，再呼叫 `list_projects` 確認連線與帳號可用。
+
+若登入 session 過期，可重新執行 login；後續 MCP 呼叫也會在偵測到 session 失效時嘗試重新開啟瀏覽器登入。session cookie 儲存在 `%APPDATA%\overleaf-mcp\cookie.json`，具有 Overleaf 帳號存取權，請勿分享、提交到 Git 或貼入 `mcp.json`。此套件的詳細需求與疑難排解見 [@netique/overleaf-mcp 文件](https://www.npmjs.com/package/@netique/overleaf-mcp)。
+
 ## 研究證據狀態
 
 稿件提到的 New Taipei Phase 2 比較值是專案文件中的**來源報告值**，不是本稿重新執行或獨立驗證的結果：
