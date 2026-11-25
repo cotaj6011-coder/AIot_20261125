@@ -2,7 +2,7 @@
 
 ## 作業項目
 
-1. **Overleaf IEEE conference draft（檢視）**：[開啟草稿](https://www.overleaf.com/project/6b06caf6aaee3bf9db88084c)（Anyone with the link：Viewer）
+1. **Overleaf IEEE conference draft（檢視）**：[開啟草稿](https://www.overleaf.com/project/6b06caf6aaee3bf9db88084c/share#eb6ce425eb289b3011fd3c61a7240c7a818d144a082a560d)（Anyone with the link：Viewer）
 
 ## 專案目的
 
