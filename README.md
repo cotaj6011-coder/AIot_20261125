@@ -1,5 +1,9 @@
 # A2Z IEEE 論文草稿處理紀錄
 
+## 作業項目
+
+1. **Overleaf IEEE conference draft（檢視）**：[開啟草稿](https://www.overleaf.com/project/6b06caf6aaee3bf9db88084c)（Anyone with the link：Viewer）
+
 ## 專案目的
 
 依據 [A2Z outline example.pdf](A2Z%20outline%20example.pdf)、Notion 中的 ICEIB 2027 投稿資訊，以及原 DIC3 專案資料，建立一份獨立的 A2Z IEEE 論文草稿。原始論文保留在 `main.tex`，新稿另存為 `main_a2z.tex`；兩者不可混為同一版本。
