@@ -1,0 +1,104 @@
+\documentclass[conference,letterpaper,10pt]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{url}
+
+\begin{document}
+
+\title{An Uncertainty-Aware AI Agent for Arrival-Time Parking Availability Prediction and Risk-Aware Recommendation}
+
+\author{\IEEEauthorblockN{Changcun Liu}
+\IEEEauthorblockA{National Chung Hsing University\\
+Taichung, Taiwan}}
+
+\maketitle
+
+\begin{abstract}
+A parking application may report a vacant roadside space when a driver submits a query, yet that space can be occupied before the driver arrives. This query-to-arrival gap is consequential when demand changes rapidly, observations are delayed, or data sources fail. This paper proposes an evidence-aware agent for arrival-time parking recommendations on roadside segments in New Taipei City, Taiwan. The agent is designed to retrieve source data, validate schema and freshness, compare simple and machine-learning forecasts, and rank feasible candidates using arrival-time fullness risk and candidate-specific evidence. A planner coordinates bounded retries, replanning, fallback, and abstention; it does not generate occupancy values from language-model output. Evaluation is planned with chronological 60/20/20 partitions, purged targets at temporal boundaries, and matched +30- and +60-minute horizons. Prediction error, calibrated risk, arrival-time Top-3 success, recommendation coverage, fault handling, and latency will be assessed against Persistence, Historical Median, distance-only ranking, and a fixed pipeline. Existing project documentation reports lower aggregate mean absolute error (MAE) for Persistence than for two tree models, but those results are not independently reproduced here and require leakage-controlled revalidation. The proposed contribution is a falsifiable, auditable decision workflow; recommendation benefits and agent superiority remain unverified.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Smart parking, arrival-time prediction, AI agent, data quality, uncertainty-aware recommendation, intelligent transportation systems.
+\end{IEEEkeywords}
+
+\section{Introduction}
+Drivers need a space that remains available when they reach a destination, not merely a vacancy observed when they search. Real-time status can become stale during travel, while a prediction error may direct a driver to an occupied space and prolong searching. In the San Francisco SFpark pilot, self-reported weekday parking-search time in pilot areas changed from 11 minutes 36 seconds to 6 minutes 36 seconds; the comparison areas changed by 13\% over the same period \cite{sfmta2014}. SFpark combined information, demand-responsive pricing, and other management actions. Its historical result motivates attention to search cost but is neither a New Taipei baseline nor evidence of an AI effect. Prior work also simulates the search consequences of inaccurate on-street predictions \cite{cao2025}.
+
+This study addresses roadside-segment availability in New Taipei City at a user-specified arrival time. It does not claim that a New Taipei predictive service has been deployed. The intended response for each eligible segment includes an estimate of available spaces at the target horizon, source time and quality, and a constrained Top-$k$ ranking. A full-occupancy probability is reported only when valid labels and calibration support it. If data are stale, a requested horizon is unsupported, or source validation fails, the system should seek an allowed fallback, request confirmation, or abstain rather than treating unknown status as vacancy.
+
+The central question is whether a quality-aware, failure-aware workflow improves supported arrival-time recommendations over simpler alternatives using the same inputs. Three hypotheses make that question testable: H1, a candidate model improves forecast error over Persistence at matched horizons; H2, risk-aware ranking improves arrival-time Top-3 success over distance-only ranking at matched walking-distance and coverage conditions; and H3, an agent reduces unsupported recommendations relative to a fixed pipeline under matched source and fault conditions. None is presumed to hold. The reported aggregate comparison currently favors Persistence, and H2 and H3 have not been evaluated.
+
+\section{Related Work}
+\subsection{Forecasting targets and baselines}
+Ma \emph{et al.} survey statistical, machine-learning, and deep-learning approaches to urban parking prediction \cite{ma2024}. The survey supports choosing the prediction unit, horizon, and label semantics before increasing model complexity. Persistence and same-weekday/time Historical Median are therefore necessary local baselines, not deliberately weak comparators. Schneble and Kauermann model individual on-street parking-spot occupancy durations using time-to-event and semi-Markov methods \cite{schneble2025}. Their treatment of occupancy transitions is relevant, but spot duration is not equivalent to a segment-level count of available spaces.
+
+\subsection{Spatial, temporal, and regional models}
+Cao \emph{et al.} use static, dynamic, and hidden graph representations for on-street availability prediction \cite{cao2025}; Qian \emph{et al.} fuse multi-view spatial-temporal information with graph-attention gated networks for curb occupancy \cite{qian2025}. These studies establish spatial interaction and external context as existing research directions. Their findings do not establish New Taipei performance, and graph features require reliable neighboring observations and strict temporal leakage controls. Vakrinou \emph{et al.} study multi-source prediction for four off-street garages in Athens \cite{vakrinou2026}; garage observations cannot be assumed to transfer to roadside segments. Kuang \emph{et al.} investigate deep meta-learning with heterogeneous, real-time information for regional parking occupancy \cite{kuang2025}. Transfer to New Taipei remains an empirical question rather than an assumed benefit.
+
+\subsection{Uncertainty and decision support}
+Nezhadettehad \emph{et al.} explicitly model epistemic and aleatoric uncertainty with Bayesian neural networks for parking prediction \cite{nezhadettehad2025}. Accordingly, this work does not claim that parking prediction has lacked uncertainty modeling. Source freshness, missingness, and model variability are operational quality indicators, not a validated Bayesian decomposition. Piccialli \emph{et al.} describe an urban parking digital-twin framework integrating management and mobility forecasting \cite{piccialli2025}; integration itself is not claimed as novel. The proposed contribution is narrower: a test of candidate-specific evidence, arrival-time curb recommendations, and explicit failure handling against matched baselines. The UCI Parking Birmingham collection is an off-street facility dataset with 35,717 observations \cite{stolfi2017}; it may support quality-analysis methods but cannot substitute for New Taipei roadside ground truth.
+
+\section{Proposed Scheme}
+\subsection{Problem definition}
+Let $s$ denote a roadside segment, $t$ the latest admissible observation time, and $h$ the travel-to-arrival horizon. Let $C_s$ be the reported segment capacity and $O_{s,t+h}$ the occupied-space count at the target time. The target availability is
+\begin{equation}
+Y_{s,t+h}=\max(0,C_s-O_{s,t+h}).
+\end{equation}
+Given only information available by $t$, the system estimates $Y_{s,t+h}$ for supported horizons and ranks segments that meet parking-type and walking constraints. Features, preprocessing, model selection, and calibration must not use observations after the corresponding cutoff. A candidate's confidence must reflect its own data quality; a high-quality observation at one segment cannot legitimize a stale observation at another.
+
+\subsection{Agent workflow}
+The proposed workflow has three responsibility groups. First, a planner selects an HTTP JSON connector or historical JSONL reader based on the request and available tools. A validation stage checks schema, source timestamp, missing values, segment identity, and capacity plausibility. Invalid or stale input is recorded and excluded from unsupported inference. Second, a prediction component creates past-only lag and rolling features and compares Persistence, same-weekday/time Historical Median, Random Forest, and HistGradientBoosting. Isotonic or Platt calibration is a candidate only after labels, calibration partitions, and reliability checks are validated. Third, a decision component applies parking-type and walking constraints, then ranks candidates by distance and supported fullness risk while retaining source timestamps and candidate-specific evidence.
+
+A tool registry and planner coordinate a bounded retry and replan policy. Each action is logged with the selected tool, input interval, validation outcome, model or fallback, and recommendation evidence. On timeout, schema error, or stale data, the planner retries only within a fixed budget and may select an alternate valid source. If no defensible evidence remains, it abstains or asks the user to confirm; it does not convert an unknown state into a vacancy. A language model may interpret a request and coordinate tools, but numerical occupancy, risk, and distance values must come from validated tools. Haversine distance is only a straight-line estimate and must not be presented as a routed walking distance. The New Taipei integration remains proposed; a separately reported Taichung information-only prototype has future prediction disabled.
+
+\subsection{PDAC-oriented architecture and evidence contract}
+The control plane follows an iterative perception, decision, action, and check cycle. This decomposition makes the agent's responsibilities inspectable and separates language interaction from numerical inference. During perception, the request is normalized into a destination, expected arrival time, walking constraint, and parking type. Source adapters return candidate observations together with source identifiers and observation timestamps. A data contract records the segment key, capacity, occupied count, freshness, and validation status; a missing field or invalid capacity is a failed observation, not an implicit zero. This contract also supports reproducible replay because each decision can be associated with the exact input window and source state.
+
+During decision, the planner selects an admissible connector and prediction horizon, then dispatches deterministic validation and forecasting tools. The planner may choose among tools, but it cannot override a failed schema check or manufacture a probability. Model outputs are accepted only for horizons supported by training data and a leakage-controlled evaluation. If calibration is unavailable, the interface reports a score or qualitative evidence only when its semantics have been defined; it does not label an uncalibrated score as a probability. Constraint filtering precedes ranking so that a nearby but ineligible facility cannot outrank a feasible roadside segment. Ranking also preserves the reason for each selection, including distance estimate, data age, and supported fullness risk.
+
+During action, the system either returns a small ranked set with evidence or executes a bounded retry, alternate-source selection, or replan. Retry limits and timeouts are fixed before evaluation to prevent an agent from receiving more computational budget than its fixed-pipeline comparator. The user-facing action includes the observation time and an explicit uncertainty or abstention state. During check, postconditions verify that every recommendation has a valid segment identifier, an admissible horizon, a source timestamp, and a traceable model or fallback. Evidence logs record tool selection, validation outcomes, retry count, and final disposition. They are intended for audit and evaluation; they are not substitutes for independently measured arrival outcomes.
+
+The evidence contract treats freshness and model uncertainty as different quantities. Freshness describes how old an observation is relative to the request cutoff; uncertainty describes limitations of the predictive estimate under a specified model and validation procedure. They may jointly affect eligibility or ranking, but a freshness threshold alone does not establish a calibrated probability. The system should expose which condition caused a recommendation to be withheld, such as a stale feed, unsupported horizon, failed capacity check, or insufficient validation coverage. This distinction prevents a single opaque confidence score from concealing different failure modes.
+
+Operational checks are paired with the experimental protocol. Fault injection will use the same timeout, stale-data, and schema-error cases for the planner and fixed pipeline. For each case, the evaluator will retain the request, admissible observations, tool-call sequence, retry count, recommendation set, abstention reason, and elapsed time. Sensitive destination history should be minimized in retained logs; identifiers can be pseudonymized for analysis, while the data required to verify each experimental label remains documented. These design choices are proposed safeguards, not evidence that a deployed New Taipei service already implements them. A deployment decision would require reproducible tests of the data contract, calibration, privacy controls, and recovery behavior in addition to aggregate forecast accuracy.
+
+\subsection{Research positioning}
+The research gap is not the absence of parking forecasts, uncertainty models, or integrated decision systems. It is the project-specific, testable question of whether an arrival-time roadside workflow combines data-quality gating, horizon-matched forecasts, candidate-specific risk, and failure-aware orchestration to produce better-supported recommendations than simpler alternatives using the same data. The intended contribution is an auditable comparison with explicit abstention, not a claim of first integration or an assumed advantage from agent use.
+
+\section{Experimental Design}
+\subsection{Temporal protocol and hypotheses}
+Evaluation will use a chronological 60/20/20 train/validation/test scheme. Targets whose timestamps cross a split boundary will be purged; splitting feature rows alone is insufficient. Features at time $t$ may use only data available by $t$. Model selection and any probability calibration will use training and validation data, leaving test outcomes untouched. Results will report segment counts, accepted examples, horizons, exclusions, and temporal coverage. The +30- and +60-minute tasks will be evaluated separately, and all primary models will use matched test rows.
+
+H1 compares Persistence and Historical Median with Random Forest and HistGradientBoosting using MAE and root mean squared error (RMSE). Results will be stratified by horizon and segment where sample support permits. H2 compares risk-aware Top-3 recommendations with distance-only ranking at matched walking-distance limits and accepted-request coverage. Outcomes include the proportion of arrivals with at least one recommended non-full segment, Brier score and expected calibration error (ECE) for supported fullness probabilities, precision-recall area under the curve where appropriate, coverage, and abstention rate. Arrival ground truth requires a prespecified tolerance window and valid post-arrival observations; cases without defensible labels will not be silently scored as successes.
+
+H3 compares the planner with a fixed pipeline using identical data sources, models, timeout budgets, and injected timeout, stale-data, and schema-error cases. Measures include recommendations lacking adequate evidence, supported recommendation coverage, abstention, conditional error, and 95th-percentile latency. This comparison tests orchestration rather than attributing any improvement to an agent label. Proposed go/no-go targets are at least 5\% MAE improvement, full-occupancy recall of at least 0.80, a 5-percentage-point Top-3 success increase, and 95th-percentile latency no greater than 3 s. These are prospective thresholds, not achieved results.
+
+\begin{table}[t]
+\caption{Planned comparisons and primary evidence}
+\label{tab:planned}
+\centering
+\footnotesize
+\begin{tabular}{p{0.12\columnwidth}p{0.34\columnwidth}p{0.40\columnwidth}}
+\toprule
+Question & Comparison & Primary evidence \\
+\midrule
+H1 & Persistence / Historical Median vs. tree models & MAE, RMSE at +30 and +60 min \\
+H2 & Risk-aware Top-3 vs. distance-only & Arrival success, Brier/ECE, coverage \\
+H3 & Planner vs. fixed pipeline & Unsupported advice, abstention, p95 latency \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Reported evidence and limitations}
+The project design reports a Phase 2 comparison on 9,178,935 common test observations: Persistence MAE 0.326757, Random Forest MAE 0.402669, and HistGradientBoosting MAE 0.537539. These values are source-reported and were not independently reproduced in the present repository. The aggregate comparison does not support a claim that the tree models outperform Persistence. The design also reports target-time crossing around nominal split boundaries and substantial no-change observations, requiring purged-label revalidation and subgroup analysis. An earlier sample-notebook MAE of approximately 7.12 spaces is a different exploratory experiment and is not comparable to the later aggregate evaluation.
+
+No H2 arrival-outcome benefit, calibrated-risk result, or H3 agent-versus-pipeline advantage is available. The data, full training run, and executable New Taipei service are not included with the submitted evidence. SFpark is contextual evidence only; its 43\% within-area decrease is not a New Taipei baseline, target, or causal estimate for this agent. Taichung's reported current-information GIS prototype and Birmingham's off-street collection likewise do not establish New Taipei deployment or transferability. These boundaries are part of the result, not caveats to be removed from a summary.
+
+\section{Conclusion}
+This paper specifies a proposal for an uncertainty-aware agent that turns validated roadside observations into evidence-backed arrival-time recommendations. Its evaluation is designed to test forecasting value, decision value, and fault-handling value separately, with Persistence and a fixed pipeline as credible alternatives. Existing project-reported offline results currently favor Persistence and remain unreproduced; arrival-time Top-3 benefit and agent superiority remain open questions. The system should advance only if leakage-controlled experiments support its risk estimates and recommendation coverage, and it should abstain when evidence is inadequate. The contribution sought is a falsifiable and traceable decision workflow for New Taipei curb parking, not an unverified performance claim.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

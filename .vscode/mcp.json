@@ -1,0 +1,8 @@
+{
+  "servers": {
+    "overleaf": {
+      "command": "npx",
+      "args": ["-y", "@netique/overleaf-mcp"]
+    }
+  }
+}
