@@ -2,7 +2,8 @@
 
 ## 作業項目
 
-1. **Overleaf IEEE conference draft（檢視）**：[開啟草稿](https://www.overleaf.com/project/6b06caf6aaee3bf9db88084c/share#eb6ce425eb289b3011fd3c61a7240c7a818d144a082a560d)（Anyone with the link：Viewer）
+1. **Overleaf 原始論文（`main.tex`）**：[開啟舊稿](https://www.overleaf.com/project/6b06caf6aaee3bf9db88084c/share#eb6ce425eb289b3011fd3c61a7240c7a818d144a082a560d)（Anyone with the link：Viewer）
+2. **Overleaf A2Z 新稿（`main_a2z.tex`）**：[開啟 A2Z 新稿](https://www.overleaf.com/project/6b06df90499b19311d268704/share#04bd02416f85a889c48595098458fdc4692f264b2b47ef1f)（Anyone with the link：Viewer）
 
 ## 專案目的
 
